@@ -186,9 +186,9 @@ static const struct super_operations debugfs_super_operations = {
 
 static struct vfsmount *debugfs_automount(struct path *path)
 {
-	struct vfsmount *(*f)(void *);
-	f = (struct vfsmount *(*)(void *))path->dentry->d_fsdata;
-	return f(d_inode(path->dentry)->i_private);
+	debugfs_automount_t f;
+	f = (debugfs_automount_t)path->dentry->d_fsdata;
+	return f(path->dentry, d_inode(path->dentry)->i_private);
 }
 
 static const struct dentry_operations debugfs_dops = {
@@ -449,7 +449,7 @@ EXPORT_SYMBOL_GPL(debugfs_create_dir);
  */
 struct dentry *debugfs_create_automount(const char *name,
 					struct dentry *parent,
-					struct vfsmount *(*f)(void *),
+					debugfs_automount_t f,
 					void *data)
 {
 	struct dentry *dentry = start_creating(name, parent);
@@ -699,7 +699,7 @@ struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,
 	take_dentry_name_snapshot(&old_name, old_dentry);
 
 	error = simple_rename(d_inode(old_dir), old_dentry, d_inode(new_dir),
-		dentry);
+			      dentry, 0);
 	if (error) {
 		release_dentry_name_snapshot(&old_name);
 		goto exit;
